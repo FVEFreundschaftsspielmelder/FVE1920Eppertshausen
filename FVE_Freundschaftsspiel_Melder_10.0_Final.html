@@ -1,0 +1,44 @@
+<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>FVE Freundschaftsspiel-Melder 9.5 Final</title><style>:root{--red:#8f1320;--gold:#d4af37;--bg:#f4f6f8}body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:var(--bg)}header{background:linear-gradient(135deg,#6b0f1a,var(--red));color:#fff;padding:25px;text-align:center}.card{background:#fff;padding:20px;border-radius:20px;margin:20px;box-shadow:0 5px 15px rgba(0,0,0,.15)}.btn{padding:12px 18px;border:none;border-radius:12px;cursor:pointer;font-weight:700}.red{background:var(--red);color:#fff}.gold{background:var(--gold)}.green{background:#16a34a;color:#fff}.danger{background:#dc2626;color:#fff}input,select,textarea{width:100%;padding:12px;margin-top:5px;border:1px solid #ccc;border-radius:10px;box-sizing:border-box}.grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.full{grid-column:1/-1}.hidden{display:none}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}.stat{background:#fff;padding:15px;border-radius:15px;text-align:center}.num{font-size:30px;font-weight:bold;color:#8f1320}.entry{border-top:1px solid #ddd;padding:10px 0}</style></head><body><header><h1>⚽ FVE Freundschaftsspiel-Melder 9.5 Final</h1><div>© Markus Beier</div></header><div id="login" class="card"><h2>Login</h2><input id="user" placeholder="Benutzername"><br><br><input id="pass" type="password" placeholder="Passwort"><br><br><button class="btn red" onclick="loginUser()">Anmelden</button><p id="loginMsg"></p></div><div id="trainer" class="hidden"><div class="card"><h2>Neue Meldung</h2><div class="grid"><div><label>Mannschaft</label><select id="team" onchange="updateLeader()"><option>A1</option><option>B1</option><option>C1</option><option>D1</option><option>D2</option><option>E1</option><option>E2</option><option>F1</option><option>G1</option></select></div><div><label>Datum</label><input id="date" type="date"></div><div><label>Uhrzeit</label><input id="time" type="time"></div><div><label>Spielort</label><input id="venue" value="Sportzentrum Eppertshausen"></div><div class="full"><div id="leiterInfo"><b>Zuständiger Klassenleiter:</b> -</div></div><div class="full"><label>Gastmannschaft</label><input id="opponent"></div><div class="full"><label>Bemerkung</label><textarea id="note"></textarea></div><div><label>Spieltyp</label><select id="type"><option>Heimspiel</option><option>Auswärtsspiel</option></select></div><div><label>Spieleranzahl</label><input id="players" type="number"></div><div class="full"><button class="btn green" onclick="saveReport()">Spiel melden</button></div></div></div></div><div id="admin" class="hidden"><div class="stats"><div class="stat"><div id="total" class="num">0</div>Gesamt</div><div class="stat"><div id="open" class="num">0</div>Offen</div><div class="stat"><div id="done" class="num">0</div>Gemeldet</div></div><div class="card"><h2>Meldungen</h2><button class="btn gold" onclick="exportBackup()">Backup Export</button><input type="file" onchange="importBackup(event)"><div id="list"></div></div></div><script>const leaders={'A1':'Peter Lotz','B1':'Peter Lotz','C1':'Frank Weber','D1':'Robert Baviera','D2':'Robert Baviera','E1':'Manfred Speck','E2':'Manfred Speck','F1':'Jochen Becker','G1':'Jochen Becker'};function updateLeader(){leiterInfo.innerHTML='<b>Zuständiger Klassenleiter:</b> '+(leaders[team.value]||'-');}function loginUser(){const u=user.value,p=pass.value;if(u==='FVETrainer'&&p==='FVETrainer'){login.classList.add('hidden');trainer.classList.remove('hidden');}else if(u==='Jugendleiter'&&p==='Jugendleiterfve'){login.classList.add('hidden');admin.classList.remove('hidden');render();}else loginMsg.textContent='Login fehlgeschlagen';}function saveReport(){
+
+    const leader = leaders[team.value] || '-';
+
+    const form = document.createElement('form');
+
+    form.method = 'POST';
+    form.action = 'https://formsubmit.co/fve.markus@gmx.de';
+
+    const fields = {
+
+        "_subject": "Neue Freundschaftsspiel-Meldung",
+        "_captcha": "false",
+        "_template": "table",
+
+        "Mannschaft": team.value,
+        "Klassenleiter": leader,
+        "Datum": date.value,
+        "Uhrzeit": time.value,
+        "Spielort": venue.value,
+        "Gastmannschaft": opponent.value,
+        "Spieltyp": type.value,
+        "Spieleranzahl": players.value,
+        "Bemerkung": note.value
+
+    };
+
+    Object.entries(fields).forEach(([name, value]) => {
+
+        const input = document.createElement('input');
+
+        input.type = 'hidden';
+        input.name = name;
+        input.value = value;
+
+        form.appendChild(input);
+
+    });
+
+    document.body.appendChild(form);
+alert('FormSubmit wird jetzt aufgerufen');
+
+    form.submit();
+}function markDone(id){let r=JSON.parse(localStorage.getItem('fve_reports_v9')||'[]');let x=r.find(a=>a.id===id);if(x)x.status='done';localStorage.setItem('fve_reports_v9',JSON.stringify(r));render();}function removeEntry(id){let r=JSON.parse(localStorage.getItem('fve_reports_v9')||'[]').filter(a=>a.id!==id);localStorage.setItem('fve_reports_v9',JSON.stringify(r));render();}function render(){let r=JSON.parse(localStorage.getItem('fve_reports_v9')||'[]');total.textContent=r.length;open.textContent=r.filter(x=>x.status==='open').length;done.textContent=r.filter(x=>x.status==='done').length;list.innerHTML=r.map(a=>`<div class='entry'><b>${a.team}</b><br>${a.date} ${a.time}<br>${a.opponent}<br>${a.type}<br><button class='btn green' onclick='markDone(${a.id})'>Gemeldet</button> <button class='btn danger' onclick='removeEntry(${a.id})'>Löschen</button></div>`).join('');}function exportBackup(){let d=localStorage.getItem('fve_reports_v9')||'[]';let b=new Blob([d],{type:'application/json'});let a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='FVE_Backup_v95.json';a.click();}function importBackup(e){let f=e.target.files[0];let r=new FileReader();r.onload=function(){localStorage.setItem('fve_reports_v9',r.result);render();};r.readAsText(f);}</script></body></html>
